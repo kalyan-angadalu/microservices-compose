@@ -1,0 +1,195 @@
+services:
+
+  mysql-db:
+    image: mysql:8.4
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: customer_db
+      MYSQL_USER: dockeruser
+      MYSQL_PASSWORD: docker123
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+       - mysql-data:/var/lib/mysql
+       - ./mysql-init:/docker-entrypoint-initdb.d
+
+    networks:
+      - microservices-network
+
+
+  service-registry:
+    image: service-registry:latest
+    pull_policy: never
+    restart: unless-stopped
+
+    ports:
+      - "8761:8761"
+
+    networks:
+      - microservices-network
+
+
+  config-server:
+    image: config-server:latest
+    pull_policy: never
+    restart: unless-stopped
+
+    ports:
+      - "8888:8888"
+
+    networks:
+      - microservices-network
+
+    depends_on:
+      - service-registry
+
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+
+
+  customer-service:
+    image: customer-service:latest
+    pull_policy: never
+    restart: unless-stopped
+
+    ports:
+      - "8081:8080"
+
+    networks:
+      - microservices-network
+
+    depends_on:
+      - mysql-db
+      - service-registry
+      - config-server
+
+    environment:
+      SPRING_APPLICATION_NAME: customer-service
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/customer_db
+      SPRING_DATASOURCE_USERNAME: dockeruser
+      SPRING_DATASOURCE_PASSWORD: docker123
+
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+
+  order-service:
+    image: order-service:latest
+    pull_policy: never
+    restart: unless-stopped
+
+    ports:
+      - "8082:8082"
+
+    networks:
+      - microservices-network
+
+    depends_on:
+      - mysql-db
+      - service-registry
+      - config-server
+      - customer-service
+
+    environment:
+      SPRING_APPLICATION_NAME: order-service
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/order_db
+      SPRING_DATASOURCE_USERNAME: dockeruser
+      SPRING_DATASOURCE_PASSWORD: docker123
+
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+  notification-service:
+    image: notification-service:latest
+    pull_policy: never
+    restart: unless-stopped
+
+    ports:
+      - "8083:8083"
+
+    networks:
+      - microservices-network
+
+    depends_on:
+      - kafka
+      - service-registry
+      - config-server
+      - order-service
+
+    environment:
+      SPRING_APPLICATION_NAME: notification-service
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/   
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_APP_PASSWORD: ${MAIL_APP_PASSWORD} 
+
+  api-gateway:
+    image: api-gateway:latest
+    pull_policy: never
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    networks:
+      - microservices-network
+
+    depends_on:
+      - service-registry
+      - config-server
+      - customer-service
+      - order-service
+
+    environment:
+      SPRING_APPLICATION_NAME: api-gateway
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-registry:8761/eureka/
+  kafka:
+    image: apache/kafka:4.1.2
+    container_name: kafka
+    restart: unless-stopped
+
+    ports:
+      - "9092:9092"
+
+    networks:
+      - microservices-network
+
+    environment:
+      KAFKA_NODE_ID: 1
+
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_LISTENERS: CONTROLLER://:9093,PLAINTEXT://:9092
+
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+      KAFKA_NUM_PARTITIONS: 1    
+networks:
+  microservices-network:
+    driver: bridge
+
+
+volumes:
+  mysql-data:

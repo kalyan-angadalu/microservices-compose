@@ -1,0 +1,7 @@
+CREATE DATABASE IF NOT EXISTS customer_db;
+CREATE DATABASE IF NOT EXISTS order_db;
+
+GRANT ALL PRIVILEGES ON customer_db.* TO 'dockeruser'@'%';
+GRANT ALL PRIVILEGES ON order_db.* TO 'dockeruser'@'%';
+
+FLUSH PRIVILEGES;
