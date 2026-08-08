@@ -4,8 +4,9 @@ A production-style microservices application built using Spring Boot and Spring 
 
 The project demonstrates service discovery, centralized configuration, API Gateway routing, REST-based communication, Kafka event-driven messaging, email notifications, MySQL persistence, and Docker Compose container orchestration.
 
-## Architecture
+## Architecture Diagram
 
+![Spring Boot Microservices Architecture](microservices-architecture.png)
 The system consists of the following microservices:
 
 | Service | Responsibility |
