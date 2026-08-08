@@ -155,6 +155,126 @@ docker ps
 | Kafka | 9092 | Event broker |
 | MySQL | 3307 | Database access from host |
 
+## API Endpoints
+
+All client requests can be routed through the API Gateway running on port `8080`.
+
+### Customer Service
+
+The Customer Service provides customer information used by the Order Service.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/customers/{id}` | Retrieves customer information by customer ID |
+
+#### Get Customer by ID
+
+```http
+GET /customers/1
+```
+
+Example response:
+
+```json
+{
+  "id": 1,
+  "name": "kalyan",
+  "email": "Kalyan@gmail.com",
+  "phone": "879000"
+}
+```
+
+> The current Customer Service uses sample customer data for demonstrating inter-service communication.
+
+---
+
+### Order Service
+
+The Order Service manages order operations and communicates with Customer Service to retrieve customer information.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/orders/place` | Places a new order |
+| GET | `/orders/getAll` | Retrieves all orders |
+| GET | `/orders/get/{id}` | Retrieves an order by ID |
+| PUT | `/orders/update/{id}` | Updates an existing order |
+| DELETE | `/orders/delete/{id}` | Deletes an order |
+| GET | `/orders/customer/{customerId}` | Retrieves customer information from Customer Service |
+| GET | `/orders/{id}/details` | Retrieves combined order and customer details |
+
+### Place an Order
+
+```http
+POST /orders/place
+```
+
+Example request:
+
+```json
+{
+  "customerId": 1,
+  "productName": "Laptop",
+  "quantity": 1,
+  "price": 65000
+}
+```
+
+When an order is placed:
+
+1. Order Service receives the request.
+2. Customer information is retrieved from Customer Service.
+3. The order is persisted in MySQL.
+4. The order status is set to `PLACED`.
+5. An order event is published to Kafka.
+6. Notification Service consumes the event.
+7. An email notification is sent.
+
+### Get All Orders
+
+```http
+GET /orders/getAll
+```
+
+### Get Order by ID
+
+```http
+GET /orders/get/1
+```
+
+### Update Order
+
+```http
+PUT /orders/update/1
+```
+
+### Delete Order
+
+```http
+DELETE /orders/delete/1
+```
+
+Successful response:
+
+```text
+Order deleted successfully.
+```
+
+### Get Customer through Order Service
+
+```http
+GET /orders/customer/1
+```
+
+This endpoint demonstrates synchronous communication between Order Service and Customer Service.
+
+### Get Order with Customer Details
+
+```http
+GET /orders/1/details
+```
+
+Returns combined order and customer information.
+
 ### Eureka Dashboard
 
 After the containers are running, open:
