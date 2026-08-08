@@ -275,6 +275,101 @@ GET /orders/1/details
 
 Returns combined order and customer information.
 
+## Kafka Event-Driven Communication
+
+The project uses Apache Kafka for asynchronous communication between the Order Service and Notification Service.
+
+When a new order is successfully placed, the Order Service acts as a Kafka producer and publishes an order event. The Notification Service acts as a Kafka consumer and processes the event independently.
+
+### Kafka Flow
+
+```text
+Client
+  |
+  v
+API Gateway
+  |
+  v
+Order Service
+  |
+  | Publish Order Event
+  v
+Apache Kafka
+  |
+  | Consume Order Event
+  v
+Notification Service
+  |
+  v
+Email Notification
+```
+
+### Order Service - Kafka Producer
+
+After an order is successfully created, the Order Service publishes an order event to Kafka.
+
+The event contains the information required by the Notification Service to process the notification.
+
+This provides asynchronous communication between the services and avoids tightly coupling the Order Service with the notification logic.
+
+### Notification Service - Kafka Consumer
+
+The Notification Service listens for order events published to Kafka.
+
+When an event is received, the service:
+
+1. Consumes the order event from Kafka.
+2. Extracts the required order/customer information.
+3. Prepares the email notification.
+4. Sends the email using the configured mail server.
+
+## Email Notification Flow
+
+Email credentials are supplied through environment variables rather than being hard-coded into the application.
+
+```env
+MAIL_USERNAME=your-email@example.com
+MAIL_APP_PASSWORD=your-app-password
+```
+
+The real credentials are stored in the local `.env` file, which should not be committed to GitHub.
+
+The `.env.example` file documents the required environment variables without exposing sensitive credentials.
+
+### Complete Order Flow
+
+```text
+POST /orders/place
+        |
+        v
+   API Gateway
+        |
+        v
+   Order Service
+        |
+        +----> Customer Service
+        |       Retrieve Customer
+        |
+        v
+      MySQL
+   Persist Order
+        |
+        v
+      Kafka
+   Publish Event
+        |
+        v
+Notification Service
+        |
+        v
+ Email Notification
+```
+
+This architecture demonstrates both:
+
+- **Synchronous communication** — Order Service communicates with Customer Service.
+- **Asynchronous communication** — Order Service communicates with Notification Service through Kafka.
+
 ### Eureka Dashboard
 
 After the containers are running, open:
