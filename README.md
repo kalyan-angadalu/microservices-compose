@@ -57,12 +57,13 @@ All microservices register with the Eureka Service Registry and obtain centraliz
 
 The application is divided into independently maintained microservices:
 
-- Service Registry
-- Config Server
-- API Gateway
-- Customer Service
-- Order Service
-- Notification Service
+- [Service Registry](https://github.com/kalyan-angadalu/service-registry)
+- [Config Server](https://github.com/kalyan-angadalu/config-server)
+- [API Gateway](https://github.com/kalyan-angadalu/api-gateway)
+- [Customer Service](https://github.com/kalyan-angadalu/customer-service)
+- [Order Service](https://github.com/kalyan-angadalu/order-service)
+- [Notification Service](https://github.com/kalyan-angadalu/notification-service)
+- [Microservices Config](https://github.com/kalyan-angadalu/microservices-config)
 
 ## Containerized Deployment
 
